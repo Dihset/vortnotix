@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "backend"
+version = "0.1.0"
+description = ""
+authors = ["Egor <slamihin123@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.14"
+uvicorn = "^0.35.0"
+gunicorn = "^23.0.0"
+pydantic-settings = "^2.10.1"
+
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.16.1"
+ruff = "^0.12.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = []
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "C90", # complex-structure
+]
+ignore = [
+    "E501", # line too long, handled by black
+    "B008",
+    "C416",
+    "B019", # Использование lru_cache Под вопросом
+]
