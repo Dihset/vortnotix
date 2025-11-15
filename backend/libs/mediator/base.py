@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 
 class BaseCommand:
@@ -10,6 +11,7 @@ class BaseEvent:
     pass
 
 
+@dataclass
 class Result[R, E: BaseEvent]:
     result: R
     events: Iterable[E]
@@ -26,5 +28,5 @@ class BaseUseCase[C: BaseCommand, R](ABC):
 
 class BaseHandler[E: BaseEvent](ABC):
     @abstractmethod
-    async def execute(self, event: E) -> EventStore:
+    async def execute(self, event: E) -> EventStore | None:
         pass

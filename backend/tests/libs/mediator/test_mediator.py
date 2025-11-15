@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 import punq
@@ -5,6 +6,7 @@ import pytest
 
 from libs.mediator.base import BaseCommand, BaseEvent, BaseHandler, BaseUseCase, EventStore, Result
 from libs.mediator.mediator import ContainerProtocol, Mediator
+from libs.mediator.middleware import BaseMediatorMiddleware
 from libs.mediator.registry import BaseCommandRegistry, BaseEventRegistry
 
 
@@ -36,6 +38,26 @@ class Handler(BaseHandler[Event]):
 
     async def execute(self, event: Event) -> EventStore:
         self.checker.handler_runned = True
+
+
+@dataclass
+class CheckerMiddleware(BaseMediatorMiddleware):
+    pre_run_use_case_called: bool = False
+    post_run_use_case_called: bool = False
+    pre_run_handler_called: bool = False
+    post_run_handler_called: bool = False
+
+    async def pre_run_use_case(self, command: BaseCommand, use_case: BaseUseCase):
+        self.pre_run_use_case_called = True
+
+    async def post_run_use_case(self, command: BaseCommand, use_case: BaseUseCase, result: Result):
+        self.post_run_use_case_called = True
+
+    async def pre_run_handler(self, event: BaseEvent, handler: BaseHandler):
+        self.pre_run_handler_called = True
+
+    async def post_run_handler(self, event: BaseEvent, handler: BaseHandler, result_events: Iterable[BaseEvent]):
+        self.post_run_handler_called = True
 
 
 @pytest.fixture
@@ -71,6 +93,7 @@ def mediator(
         command_registry=command_registry,
         event_registry=event_registry,
         container=container,
+        middlewares=[CheckerMiddleware()],
     )
 
 
@@ -83,3 +106,9 @@ class TestMediator:
         checker: Checker = mediator.container.resolve(Checker)
         assert checker.use_case_runned
         assert checker.handler_runned
+
+        checker_middleware = mediator.middlewares[0]
+        assert checker_middleware.pre_run_use_case_called
+        assert checker_middleware.post_run_use_case_called
+        assert checker_middleware.pre_run_handler_called
+        assert checker_middleware.post_run_handler_called
