@@ -1,14 +1,16 @@
 from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from libs.mediator.base import BaseCommand, BaseEvent, BaseHandler, BaseUseCase
 from libs.mediator.middleware import BaseMediatorMiddleware, compose_handler, compose_use_case
 from libs.mediator.registry import BaseCommandRegistry, BaseEventRegistry
 
+T = TypeVar("T")
 
-class ContainerProtocol[T](Protocol):
+
+class ContainerProtocol(Protocol):
     def resolve(self, type_: type[T]) -> T:
         pass
 

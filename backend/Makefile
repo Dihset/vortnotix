@@ -16,3 +16,15 @@ format_changed:
 
 serve:
 	poetry run python setup.py
+
+run_storages:
+	docker-compose -f docker-compose/storages.yaml --env-file .env up -d
+
+down_storages:
+	docker-compose -f docker-compose/storages.yaml --env-file .env down
+
+makemigration:
+	poetry run alembic revision --autogenerate
+
+migrate:
+	poetry run alembic upgrade head
