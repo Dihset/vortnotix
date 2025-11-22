@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import Self
 
 from libs.mediator.base import BaseCommand, BaseEvent, BaseHandler, BaseUseCase
@@ -62,12 +63,12 @@ class BaseEventRegistry:
         else:
             self._registry[event].append(handler)
 
-    def resolve(self, event: BaseEventType) -> list[BaseHandlerType]:
+    def resolve(self, event: BaseEventType) -> Sequence[BaseHandlerType]:
         if event not in self._registry:
             raise RegistryEventNotFoundException()
         return self._registry[event]
 
-    def merge(self, registry: "BaseEventRegistry[BaseEventType, BaseHandlerType]") -> Self:
+    def merge(self, registry: "BaseEventRegistry") -> Self:
         for event, handler_list in registry._registry.items():
             for handler in handler_list:
                 self.register(event, handler)

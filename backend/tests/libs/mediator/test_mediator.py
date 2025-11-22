@@ -1,5 +1,7 @@
-from collections.abc import Iterable
+from ast import TypeVar
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import cast
 
 import punq
 import pytest
@@ -27,7 +29,7 @@ class Event(BaseEvent):
 class UseCase(BaseUseCase[Command, None]):
     checker: Checker
 
-    async def execute(self, command: Command) -> Result[None, EventStore]:
+    async def execute(self, command: Command) -> Result[None]:
         self.checker.use_case_runned = True
         return Result(result=None, events=[Event()])
 
@@ -36,8 +38,11 @@ class UseCase(BaseUseCase[Command, None]):
 class Handler(BaseHandler[Event]):
     checker: Checker
 
-    async def execute(self, event: Event) -> EventStore:
+    async def execute(self, event: Event) -> EventStore | None:
         self.checker.handler_runned = True
+
+
+R = TypeVar("R")
 
 
 @dataclass
@@ -47,17 +52,27 @@ class CheckerMiddleware(BaseMediatorMiddleware):
     pre_run_handler_called: bool = False
     post_run_handler_called: bool = False
 
-    async def pre_run_use_case(self, command: BaseCommand, use_case: BaseUseCase):
+    async def wrap_use_case(
+        self,
+        command: BaseCommand,
+        use_case: BaseUseCase,
+        call_next: Callable[[BaseCommand, BaseUseCase], Awaitable[Result[R]]],
+    ) -> Result[R]:
         self.pre_run_use_case_called = True
-
-    async def post_run_use_case(self, command: BaseCommand, use_case: BaseUseCase, result: Result):
+        result = await call_next(command, use_case)
         self.post_run_use_case_called = True
+        return result
 
-    async def pre_run_handler(self, event: BaseEvent, handler: BaseHandler):
+    async def wrap_handler(
+        self,
+        event: BaseEvent,
+        handler: BaseHandler,
+        call_next: Callable[[BaseEvent, BaseHandler], Awaitable[EventStore | None]],
+    ) -> EventStore | None:
         self.pre_run_handler_called = True
-
-    async def post_run_handler(self, event: BaseEvent, handler: BaseHandler, result_events: Iterable[BaseEvent]):
+        result = await call_next(event, handler)
         self.post_run_handler_called = True
+        return result
 
 
 @pytest.fixture
@@ -107,7 +122,7 @@ class TestMediator:
         assert checker.use_case_runned
         assert checker.handler_runned
 
-        checker_middleware = mediator.middlewares[0]
+        checker_middleware = cast(CheckerMiddleware, mediator.middlewares[0])
         assert checker_middleware.pre_run_use_case_called
         assert checker_middleware.post_run_use_case_called
         assert checker_middleware.pre_run_handler_called
